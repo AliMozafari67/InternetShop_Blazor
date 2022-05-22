@@ -1,0 +1,242 @@
+﻿@page "/ProductList"
+@using InternetShop_Blazor.Data.Entity
+@using InternetShop_Blazor.Data.CRUD_Services
+@using BlazorInputFile
+@using System.IO
+
+@inherits OwningComponentBase<ProductServices>
+
+<div class="container border p-3">
+    <div class="row">
+        <div class="col-5">
+            <h3 class="text-info">Product List</h3>
+        </div>
+        <div class="col-3">
+            <button class="btn btn-info form-control" @onclick="AddNewProduct">
+                Add New Product
+            </button>
+        </div>
+    </div>
+</div>
+@if(products == null || products.Count ==0)
+{
+    <p>
+        <em>
+            There Is No Data In Database!!!
+        </em>
+    </p>
+}
+else
+{ 
+    <div class="container border p-3 ">
+        <div class="row pt-4">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <td>Prodact Name</td>
+                        <td>Prodact Price</td>
+                        <td>Prodact Color</td>
+                        <td>Category</td>
+                        <td>Operation</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(var obj in products)
+                    {
+                        <tr>
+                            <td>@obj.ProductName</td>
+                            <td>@obj.ProductPrice</td>
+                            <td>@obj.ProductColor</td>
+                            <td>@obj.category.CategoryName</td>
+                            <td>
+                                <button class="btn btn-primary" style="width:150px;" @onclick="(() => EditProduct(obj))">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+}
+
+@* Show Pop Up Form *@
+@if (ShowPopUp)
+{
+    <div class="modal" tabindex="-1" style="display:block;" role="dialog">
+        <EditForm Model="@objProduct" OnValidSubmit="@ValidSubmit">
+            <div class="modal-dialog modal-lg">
+
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="text-info">@(objProduct.ProductId != 0 ? "Update" : "Create") Product</h3>
+                        <button type="button" class="close" @onclick="ClosePopUp">
+                            <span aria-hidden="true">X</span>
+                        </button>
+                    </div>
+                    <div class="modal-body ">
+                        @*<DataAnnotationsValidator />
+                        <ValidationSummary />*@
+                        <div class="row">
+                            <div class="col-9">
+
+                                @*Product Name*@
+                                <div class="row py-2">
+                                    <div class="col-4">
+                                        Product Name :
+                                    </div>
+                                    <div class="col-8">
+                                        <input class="form-control" type="text" @bind="objProduct.ProductName" />
+                                        <ValidationMessage For="(() => objProduct.ProductName)"></ValidationMessage>
+                                    </div>
+                                </div>
+
+                                 @*Product Price*@
+                                <div class="row py-2">
+                                    <div class="col-4">
+                                        Product Price :
+                                    </div>
+                                    <div class="col-8">
+                                        <input class="form-control" type="text" @bind="objProduct.ProductPrice" />
+                                        <ValidationMessage For="(() => objProduct.ProductPrice)"></ValidationMessage>
+                                    </div>
+                                </div>
+
+                                 @*Product Color*@
+                                <div class="row py-2">
+                                    <div class="col-4">
+                                        Product Color :
+                                    </div>
+                                    <div class="col-8">
+                                        <input class="form-control" type="text" @bind="objProduct.ProductColor" />
+                                        <ValidationMessage For="(() => objProduct.ProductColor)"></ValidationMessage>
+                                    </div>
+                                </div>
+
+                                 @*Categoy Name*@
+                                <div class="row py-2">
+                                    <div class="col-4">
+                                        Categoy Name :
+                                    </div>
+                                    <div class="col-8">
+                                        <select class="form-control" @bind="objProduct.CategoryId">
+                                            @foreach (var item in categories)
+                                            {
+                                                <option value="@item.CategoryId">@item.CategoryName</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+
+                                 @*Product Image*@
+                                <div class="row py-2">
+                                    <div class="col-4">
+                                        Product Image :
+                                    </div>
+                                    <div class="col-8">
+                                        <BlazorInputFile.InputFile OnChange="InsertPic"></BlazorInputFile.InputFile>
+                                    </div>
+                                </div>
+
+                                <div class="row py-2">
+
+                                    <div class="offset-4 col">
+                                        <button class="btn btn-primary form-control" type="submit">Submit</button>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <div class="col-3">
+                                <img style="width:100%;" src="@ConvertImageToDisplay(objProduct.ProductImage)"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </EditForm>
+    </div>
+}
+@code {
+    List<Products> products;
+    List<Category> categories;
+    Products objProduct = new Products();
+    bool ShowPopUp = false;
+    public byte[] ImageUploaded { get; set; }
+
+    protected override void OnInitialized()
+    {
+        products = Service.GetProductList();
+    }
+
+    public void AddNewProduct()
+    {
+        objProduct = new Products();
+        categories = Service.CategoryList();
+        objProduct.CategoryId = categories.ToList()[0].CategoryId;
+        objProduct.ProductId = 0;
+        ShowPopUp = true;
+
+    }
+
+    public void EditProduct(Products products)
+    {
+        ShowPopUp = true;
+        objProduct = products;
+        categories = Service.CategoryList();
+    }
+
+    public void ClosePopUp()
+    {
+        ShowPopUp = false;
+    }
+
+    public void ValidSubmit()
+    {
+        ShowPopUp = false;
+        var result = false;
+
+        if(ImageUploaded != null)
+        {
+            objProduct.ProductImage = ImageUploaded;
+            ImageUploaded = null; 
+        }
+
+        if(objProduct.ProductId==0)
+        {
+            //Create
+            result = Service.CreateProduct(objProduct);
+        }
+        else
+        {
+            //Update
+            result = Service.UpdateProduct (objProduct);
+        }
+        products = Service.GetProductList();
+    }
+
+    async Task InsertPic(IFileListEntry[] files)
+    {
+        var file = files.FirstOrDefault();
+        if(file != null)
+        {
+            var ms = new MemoryStream();
+            await file.Data.CopyToAsync(ms);
+            ImageUploaded = ms.ToArray();
+        }
+    }
+
+    string ConvertImageToDisplay(byte[] image)
+    {
+        if(image!=null)
+        {
+            var base64 = Convert.ToBase64String(image);
+            var finalString = string.Format("data:image/jpg;Base64,{0}", base64);
+            return finalString;
+        }
+        else
+            return "";
+    }
+}

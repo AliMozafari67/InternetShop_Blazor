@@ -1,0 +1,22 @@
+﻿@page "/"
+@using InternetShop_Blazor.Data.Entity
+@using InternetShop_Blazor.Data.CRUD_Services
+@inherits OwningComponentBase<ProductServices>
+<div class="border p-2 mt-2" style="background-color:azure">
+    <h2 class="text-info">Product List</h2>
+    <div class="row container">
+        @foreach (var item in productList)
+        {
+           <InternetShop_Blazor.Pages.Component.ProductList _products="item"></InternetShop_Blazor.Pages.Component.ProductList>
+ 
+        }
+     </div>
+</div>
+
+@code {
+    List<Products> productList = new List<Products>();
+    protected override void OnInitialized()
+    {
+        productList = Service.GetProductList();
+    }
+}
